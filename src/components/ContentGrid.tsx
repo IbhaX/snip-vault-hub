@@ -1,88 +1,26 @@
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
 import { ContentCard } from "./ContentCard";
-
-export interface ContentItem {
-  id: string;
-  type: "text" | "image" | "url" | "code" | "file";
-  title: string;
-  content: string;
-  tags: string[];
-  createdAt: Date;
-  thumbnail?: string;
-}
+import { Search } from "lucide-react";
+import { ContentItem } from "@/hooks/useContentItems";
 
 interface ContentGridProps {
   searchQuery: string;
+  items: ContentItem[];
 }
 
-export const ContentGrid = ({ searchQuery }: ContentGridProps) => {
-  const [items, setItems] = useState<ContentItem[]>([]);
+export const ContentGrid = ({ searchQuery, items }: ContentGridProps) => {
 
-  // Mock data for demonstration
-  useEffect(() => {
-    const mockData: ContentItem[] = [
-      {
-        id: "1",
-        type: "text",
-        title: "Project Ideas",
-        content: "Build a personal storage app with React and Supabase. Features should include drag & drop, search, and sharing capabilities.",
-        tags: ["ideas", "project", "development"],
-        createdAt: new Date("2024-01-15"),
-      },
-      {
-        id: "2",
-        type: "code",
-        title: "React Hook Pattern",
-        content: `const useLocalStorage = (key: string, initialValue: any) => {
-  const [storedValue, setStoredValue] = useState(() => {
-    try {
-      const item = window.localStorage.getItem(key);
-      return item ? JSON.parse(item) : initialValue;
-    } catch (error) {
-      return initialValue;
-    }
-  });
-
-  const setValue = (value: any) => {
-    try {
-      setStoredValue(value);
-      window.localStorage.setItem(key, JSON.stringify(value));
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  return [storedValue, setValue];
-};`,
-        tags: ["react", "hooks", "typescript"],
-        createdAt: new Date("2024-01-14"),
-      },
-      {
-        id: "3",
-        type: "url",
-        title: "Design Inspiration",
-        content: "https://dribbble.com/shots/16742371-Dashboard-Design",
-        tags: ["design", "ui", "inspiration"],
-        createdAt: new Date("2024-01-13"),
-      },
-      {
-        id: "4",
-        type: "text",
-        title: "Meeting Notes",
-        content: "Discussed the new storage app requirements:\n- Fast search capabilities\n- Multiple content types support\n- Sharing functionality\n- Cross-platform sync\n- Privacy focused",
-        tags: ["meeting", "notes", "requirements"],
-        createdAt: new Date("2024-01-12"),
-      },
-    ];
+  // Filter items based on search query
+  const filteredItems = useMemo(() => {
+    if (!searchQuery.trim()) return items;
     
-    setItems(mockData);
-  }, []);
-
-  const filteredItems = items.filter((item) =>
-    item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+    const query = searchQuery.toLowerCase();
+    return items.filter(item => 
+      item.title.toLowerCase().includes(query) ||
+      item.content?.toLowerCase().includes(query) ||
+      item.tags.some(tag => tag.toLowerCase().includes(query))
+    );
+  }, [items, searchQuery]);
 
   if (filteredItems.length === 0) {
     return (
