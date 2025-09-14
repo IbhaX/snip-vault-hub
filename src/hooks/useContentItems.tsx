@@ -92,19 +92,16 @@ export const useContentItems = () => {
     if (!user) throw new Error("User not authenticated");
 
     const fileExt = file.name.split('.').pop();
-    const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+    const filePath = `${user.id}/${Date.now()}.${fileExt}`;
 
     const { error: uploadError } = await supabase.storage
       .from('content-files')
-      .upload(fileName, file);
+      .upload(filePath, file);
 
     if (uploadError) throw uploadError;
 
-    const { data: { publicUrl } } = supabase.storage
-      .from('content-files')
-      .getPublicUrl(fileName);
-
-    return publicUrl;
+    // Return the storage path; we'll generate signed URLs when needed for viewing/sharing
+    return filePath;
   };
 
   useEffect(() => {

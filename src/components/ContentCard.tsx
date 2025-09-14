@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,14 +21,46 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ContentItem } from "@/hooks/useContentItems";
-
+import { supabase } from "@/integrations/supabase/client";
 interface ContentCardProps {
   item: ContentItem;
 }
 
 export const ContentCard = ({ item }: ContentCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const { toast } = useToast();
+
+  const resolveSignedUrl = async (path: string, expiresIn = 60 * 60) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('content-files')
+        .createSignedUrl(path, expiresIn);
+      if (error) throw error;
+      return data.signedUrl as string;
+    } catch (e) {
+      console.error('Failed to create signed URL', e);
+      return null;
+    }
+  };
+
+  // Prepare image preview signed URL if needed
+  useEffect(() => {
+    const setupPreview = async () => {
+      if (item.type === 'image' && item.file_url) {
+        if (item.file_url.startsWith('http')) {
+          setPreviewUrl(item.file_url);
+        } else {
+          const url = await resolveSignedUrl(item.file_url);
+          setPreviewUrl(url);
+        }
+      } else {
+        setPreviewUrl(null);
+      }
+    };
+    setupPreview();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item.id, item.type, item.file_url]);
 
   const getIcon = () => {
     switch (item.type) {
@@ -70,30 +102,54 @@ export const ContentCard = ({ item }: ContentCardProps) => {
   };
 
   const handleShare = async () => {
+    let shareUrl: string | undefined = undefined;
+
+    if ((item.type === 'file' || item.type === 'image') && item.file_url) {
+      shareUrl = item.file_url.startsWith('http')
+        ? item.file_url
+        : await resolveSignedUrl(item.file_url);
+    } else if (item.type === 'url') {
+      shareUrl = item.content;
+    }
+
     const shareData = {
       title: item.title,
-      text: item.content || `Check out this ${item.type}`,
-      url: item.type === 'url' ? item.content : undefined,
+      text: item.content || `Check out this ${item.type}: ${item.title}`,
+      url: shareUrl,
     };
 
-    if (navigator.share) {
+    if (navigator.share && shareUrl) {
       try {
         await navigator.share(shareData);
       } catch (error) {
         if ((error as Error).name !== 'AbortError') {
-          handleCopy();
+          if (shareUrl) {
+            await navigator.clipboard.writeText(shareUrl);
+            toast({ title: 'Link copied', description: 'Shareable link copied to clipboard' });
+          } else {
+            handleCopy();
+          }
         }
       }
     } else {
-      handleCopy();
+      if (shareUrl) {
+        await navigator.clipboard.writeText(shareUrl);
+        toast({ title: 'Link copied', description: 'Shareable link copied to clipboard' });
+      } else {
+        handleCopy();
+      }
     }
   };
 
-  const handleOpenUrl = () => {
+  const handleOpenUrl = async () => {
     if (item.type === 'url' && item.content) {
       window.open(item.content, '_blank');
     } else if ((item.type === 'file' || item.type === 'image') && item.file_url) {
-      window.open(item.file_url, '_blank');
+      const url = item.file_url.startsWith('http')
+        ? item.file_url
+        : await resolveSignedUrl(item.file_url);
+      if (url) window.open(url, '_blank');
+      else toast({ title: 'Unable to open file', description: 'Could not generate access link', variant: 'destructive' });
     }
   };
 
@@ -141,11 +197,15 @@ export const ContentCard = ({ item }: ContentCardProps) => {
           
           {item.type === 'image' && item.file_url && (
             <div className="rounded-md overflow-hidden">
-              <img 
-                src={item.file_url} 
-                alt={item.title}
-                className="w-full h-32 object-cover"
-              />
+              {previewUrl ? (
+                <img 
+                  src={previewUrl}
+                  alt={item.title}
+                  className="w-full h-32 object-cover"
+                />
+              ) : (
+                <div className="w-full h-32 animate-pulse bg-muted/20" />
+              )}
             </div>
           )}
           
