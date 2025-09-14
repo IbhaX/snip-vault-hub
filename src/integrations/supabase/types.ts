@@ -56,6 +56,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_secrets: {
+        Row: {
+          created_at: string
+          id: string
+          notes_encrypted: string | null
+          secret_type: string | null
+          title: string
+          updated_at: string
+          user_id: string
+          username: string | null
+          value_encrypted: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes_encrypted?: string | null
+          secret_type?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+          username?: string | null
+          value_encrypted: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes_encrypted?: string | null
+          secret_type?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+          username?: string | null
+          value_encrypted?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
