@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Plus, LogOut, Clock, User } from "lucide-react";
+import { Search, Plus, LogOut, Clock, User, Shield } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ContentGrid } from "@/components/ContentGrid";
 import { TimelineView } from "@/components/TimelineView";
 import { AddContentModal } from "@/components/AddContentModal";
+import { SecretsVault } from "@/components/SecretsVault";
 import { useAuth } from "@/hooks/useAuth";
 import { useContentItems } from "@/hooks/useContentItems";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -106,7 +107,7 @@ const Index = () => {
       {/* Navigation Tabs */}
       <div className="container mx-auto px-4 py-4">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 bg-glass border-glass">
+          <TabsList className="grid w-full grid-cols-3 bg-glass border-glass">
             <TabsTrigger value="grid" className="flex items-center space-x-2">
               <Search className="h-4 w-4" />
               <span>Grid View</span>
@@ -114,6 +115,10 @@ const Index = () => {
             <TabsTrigger value="timeline" className="flex items-center space-x-2">
               <Clock className="h-4 w-4" />
               <span>Timeline</span>
+            </TabsTrigger>
+            <TabsTrigger value="secrets" className="flex items-center space-x-2">
+              <Shield className="h-4 w-4" />
+              <span>Secrets</span>
             </TabsTrigger>
           </TabsList>
           
@@ -123,6 +128,10 @@ const Index = () => {
           
           <TabsContent value="timeline" className="mt-6">
             <TimelineView searchQuery={searchQuery} items={items} />
+          </TabsContent>
+          
+          <TabsContent value="secrets" className="mt-6">
+            <SecretsVault />
           </TabsContent>
         </Tabs>
       </div>
