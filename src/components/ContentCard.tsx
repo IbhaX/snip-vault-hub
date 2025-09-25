@@ -17,6 +17,7 @@ import {
   Copy, 
   Share2, 
   ExternalLink, 
+  Download,
   MoreVertical 
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -153,6 +154,38 @@ export const ContentCard = ({ item }: ContentCardProps) => {
     }
   };
 
+  const handleDownload = async () => {
+    if ((item.type === 'file' || item.type === 'image') && item.file_url) {
+      try {
+        const url = item.file_url.startsWith('http')
+          ? item.file_url
+          : await resolveSignedUrl(item.file_url);
+        
+        if (url) {
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = item.file_name || item.title;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          toast({
+            title: "Download started",
+            description: `Downloading ${item.file_name || item.title}`,
+          });
+        } else {
+          throw new Error('Could not generate download link');
+        }
+      } catch (error) {
+        toast({
+          title: "Download failed",
+          description: "Unable to download file",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
   return (
     <Card className="group bg-glass/50 border-glass hover:bg-glass/70 transition-all duration-300 hover:shadow-glow">
       <CardContent className="p-4">
@@ -185,6 +218,12 @@ export const ContentCard = ({ item }: ContentCardProps) => {
                   <Share2 className="h-4 w-4 mr-2" />
                   Share
                 </DropdownMenuItem>
+                {(item.type === 'file' || item.type === 'image') && (
+                  <DropdownMenuItem onClick={handleDownload} className="cursor-pointer">
+                    <Download className="h-4 w-4 mr-2" />
+                    Download
+                  </DropdownMenuItem>
+                )}
                 {(item.type === 'url' || item.type === 'file' || item.type === 'image') && (
                   <DropdownMenuItem onClick={handleOpenUrl} className="cursor-pointer">
                     <ExternalLink className="h-4 w-4 mr-2" />
