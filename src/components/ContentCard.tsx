@@ -6,8 +6,20 @@ import {
   DropdownMenu, 
   DropdownMenuContent, 
   DropdownMenuItem, 
+  DropdownMenuSeparator,
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { 
   FileText, 
   Code, 
@@ -18,10 +30,12 @@ import {
   Share2, 
   ExternalLink, 
   Download,
+  Trash2,
+  Eye,
   MoreVertical 
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { ContentItem } from "@/hooks/useContentItems";
+import { ContentItem, useContentItems } from "@/hooks/useContentItems";
 import { supabase } from "@/integrations/supabase/client";
 interface ContentCardProps {
   item: ContentItem;
@@ -31,6 +45,7 @@ export const ContentCard = ({ item }: ContentCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const { toast } = useToast();
+  const { deleteItem } = useContentItems();
 
   const resolveSignedUrl = async (path: string, expiresIn = 60 * 60) => {
     try {
@@ -186,6 +201,55 @@ export const ContentCard = ({ item }: ContentCardProps) => {
     }
   };
 
+  const handleDelete = async () => {
+    try {
+      await deleteItem(item.id);
+      toast({
+        title: "Deleted!",
+        description: "Item has been deleted successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Delete failed",
+        description: "Unable to delete item",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handlePublicShare = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('public-share', {
+        body: { 
+          itemId: item.id,
+          expiresIn: 24 * 60 * 60, // 24 hours
+          maxViews: 10 // Max 10 views
+        }
+      });
+
+      if (error) throw error;
+
+      const shareUrl = `${window.location.origin}/share/${data.shareId}`;
+      await navigator.clipboard.writeText(shareUrl);
+      
+      toast({
+        title: "Public link created!",
+        description: "Shareable link copied to clipboard (expires in 24h or after 10 views)",
+      });
+    } catch (error) {
+      toast({
+        title: "Share failed",
+        description: "Unable to create public share link",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRawView = async () => {
+    const rawUrl = `${window.location.origin}/raw/${item.id}`;
+    window.open(rawUrl, '_blank');
+  };
+
   return (
     <Card className="group bg-glass/50 border-glass hover:bg-glass/70 transition-all duration-300 hover:shadow-glow">
       <CardContent className="p-4">
@@ -214,10 +278,17 @@ export const ContentCard = ({ item }: ContentCardProps) => {
                   <Copy className="h-4 w-4 mr-2" />
                   Copy
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleShare} className="cursor-pointer">
+                <DropdownMenuItem onClick={handlePublicShare} className="cursor-pointer">
                   <Share2 className="h-4 w-4 mr-2" />
-                  Share
+                  Create Public Link
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleRawView} className="cursor-pointer">
+                  <Eye className="h-4 w-4 mr-2" />
+                  Raw View
+                </DropdownMenuItem>
+                
+                <DropdownMenuSeparator />
+                
                 {(item.type === 'file' || item.type === 'image') && (
                   <DropdownMenuItem onClick={handleDownload} className="cursor-pointer">
                     <Download className="h-4 w-4 mr-2" />
@@ -230,6 +301,31 @@ export const ContentCard = ({ item }: ContentCardProps) => {
                     {item.type === 'url' ? 'Open Link' : 'Open File'}
                   </DropdownMenuItem>
                 )}
+                
+                <DropdownMenuSeparator />
+                
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-pointer text-destructive focus:text-destructive">
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete
+                    </DropdownMenuItem>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className="bg-glass border-glass backdrop-blur-md">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Item</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete "{item.title}"? This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
