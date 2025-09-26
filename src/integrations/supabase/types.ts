@@ -56,6 +56,50 @@ export type Database = {
         }
         Relationships: []
       }
+      public_shares: {
+        Row: {
+          content_item_id: string
+          created_at: string
+          created_by: string
+          expires_at: string
+          id: string
+          max_views: number
+          share_id: string
+          updated_at: string
+          view_count: number
+        }
+        Insert: {
+          content_item_id: string
+          created_at?: string
+          created_by: string
+          expires_at: string
+          id?: string
+          max_views?: number
+          share_id?: string
+          updated_at?: string
+          view_count?: number
+        }
+        Update: {
+          content_item_id?: string
+          created_at?: string
+          created_by?: string
+          expires_at?: string
+          id?: string
+          max_views?: number
+          share_id?: string
+          updated_at?: string
+          view_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "public_shares_content_item_id_fkey"
+            columns: ["content_item_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_secrets: {
         Row: {
           created_at: string

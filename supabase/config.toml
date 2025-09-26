@@ -1,1 +1,7 @@
 project_id = "quuovnvafnrbcxpglvfd"
+
+[functions.secrets-vault]
+verify_jwt = true
+
+[functions.public-share]
+verify_jwt = false
